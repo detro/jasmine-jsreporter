@@ -1,0 +1,3 @@
+[submodule "examples/spec-runner/jasmine"]
+	path = examples/spec-runner/jasmine
+	url = http://github.com/pivotal/jasmine.git
