@@ -14,7 +14,7 @@ Ideal scenario of use are:
 The Reporter awaits for all the Test to finish, than produces a report that can be retrieved with
 
 ```javascript
-var JSONReport = jasmine.getJSReport ()
+var JSONReport = jasmine.getJSReport ();
 // or
 var strJSONReport = jasmine.getJSReportAsString ();
 ```
@@ -51,10 +51,13 @@ After that, you can just extract it from the page.
 
 ## How do I download it and check it works
 
-1. Download the code: `git clone http://github.com/detro/jasmine-jsreporter.git`
-2. Include the reporter in your page running Jasmine tests with something like `<script src="path/to/jasmine-jsreporter.js" type="text/javascript"></script>`
+1. Download the code:
+    * `git clone http://github.com/detro/jasmine-jsreporter.git`
+2. Include the reporter in your page running Jasmine tests with something like:
+    * `<script src="path/to/jasmine-jsreporter.js" type="text/javascript"></script>`
 3. Open your [WebInspector](http://trac.webkit.org/wiki/WebInspector), [Firebug](http://getfirebug.com/) or whatever you use
-4. On the console, type: `jasmine.getJSReport ()`
+4. On the console, type:
+    * `jasmine.getJSReport ()`
 5. Check that you get an Object back (should look like the above one)
 6. You are done!
 
@@ -64,10 +67,10 @@ Now you can setup your Test Infrastructure to _extract test results from the tes
 
 I have provided some usage examples:
 
-* `examples`
-    * `phantomjs-javascript`: Example use with PhantomJS [WORK IN PROGRESS]
-    * `selenium-java`: Example use with Selenium in Java [WORK IN PROGRESS]
-    * `spec-runner`: Example HTML page that uses Jasmine and JS-Reporter - open the WebInspector/Firebug
+* `examples/`
+    * `phantomjs-javascript/`: Example use with PhantomJS [WORK IN PROGRESS]
+    * `selenium-java/`: Example use with Selenium in Java [WORK IN PROGRESS]
+    * `spec-runner/`: Example HTML page that uses Jasmine and JS-Reporter - open the WebInspector/Firebug
 
 ## License
 
