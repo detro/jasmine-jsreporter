@@ -29,8 +29,8 @@
 
 (function () {
     // Ensure that Jasmine library is loaded first
-    if (!jasmine) {
-        throw new Exception("[Jasmine JSReporter] 'Jasmine' library not found");
+    if (typeof jasmine == 'undefined') {
+        throw new Error("[Jasmine JSReporter] 'Jasmine' library not found");
     }
 
     /**
