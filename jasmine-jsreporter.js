@@ -123,7 +123,7 @@
 
         reportRunnerResults: function (runner) {
             var suites = runner.suites(),
-                i, ilen;
+                i, j, ilen;
 
             // Attach results to the "jasmine" object to make those results easy to scrap/find
             jasmine.runnerResults = {
@@ -133,13 +133,14 @@
             };
 
             // Loop over all the Suites
-            for (i = 0, ilen = suites.length; i < ilen; ++i) {
+            for (i = 0, ilen = suites.length, j = 0; i < ilen; ++i) {
                 if (suites[i].parentSuite === null) {
-                    jasmine.runnerResults.suites[i] = getSuiteData(suites[i]);
+                    jasmine.runnerResults.suites[j] = getSuiteData(suites[i]);
                     // If 1 suite fails, the whole runner fails
-                    jasmine.runnerResults.passed = !jasmine.runnerResults.suites[i].passed ? false : jasmine.runnerResults.passed;
+                    jasmine.runnerResults.passed = !jasmine.runnerResults.suites[j].passed ? false : jasmine.runnerResults.passed;
                     // Add up all the durations
-                    jasmine.runnerResults.durationSec += jasmine.runnerResults.suites[i].durationSec;
+                    jasmine.runnerResults.durationSec += jasmine.runnerResults.suites[j].durationSec;
+                    j++;
                 }
             }
 
