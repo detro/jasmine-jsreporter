@@ -78,7 +78,8 @@
                 skipped : specs[i].results().skipped,
                 passedCount : specs[i].results().passedCount,
                 failedCount : specs[i].results().failedCount,
-                totalCount : specs[i].results().totalCount
+                totalCount : specs[i].results().totalCount,
+                failures: specs[i].results().getItems().filter(function(v) { return !v.passed_; })
             };
             suiteData.passed = !suiteData.specs[i].passed ? false : suiteData.passed;
             suiteData.durationSec += suiteData.specs[i].durationSec;
