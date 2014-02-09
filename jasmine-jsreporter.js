@@ -54,6 +54,21 @@
     }
 
     /**
+     * Create a new array which contains only the failed items.
+     * @param items Items which will be filtered
+     * @returns {Array} of failed items */
+    function failures (items) {
+        var fs = [], i, v;
+        for (i = 0; i < items.length; i += 1) {
+            v = items[i];
+            if (!v.passed_) {
+                fs.push(v);
+            }
+        }
+        return fs;
+    }
+
+    /**
      * Collect information about a Suite, recursively, and return a JSON result.
      * @param suite The Jasmine Suite to get data from
      */
@@ -79,7 +94,7 @@
                 passedCount : specs[i].results().passedCount,
                 failedCount : specs[i].results().failedCount,
                 totalCount : specs[i].results().totalCount,
-                failures: specs[i].results().getItems().filter(function(v) { return !v.passed_; })
+                failures: failures(specs[i].results().getItems())
             };
             suiteData.passed = !suiteData.specs[i].passed ? false : suiteData.passed;
             suiteData.durationSec += suiteData.specs[i].durationSec;
