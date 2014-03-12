@@ -1,5 +1,11 @@
 # Jasmine JS-Reporter
 
+- - -
+This is `jasmine-2.0` branch and changes to this library to support
+[this new version of Jasmine](http://jasmine.github.io/2.0/introduction.html)
+should go in there.
+- - -
+
 This is a Jasmine Reporter, designed to simplify the extraction of test results from the Page.
 It's tailored with _Test Reporting Automation_ in mind.
 
