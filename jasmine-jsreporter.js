@@ -28,18 +28,11 @@
 */
 
 (function () {
-    // Ensure that Jasmine library is loaded first
-    if (typeof jasmine === "undefined") {
-        throw new Error("[Jasmine JSReporter] 'Jasmine' library not found");
-    }
+    var finalResults;
 
-    /**
-     * Calculate elapsed time, in Seconds.
-     * @param startMs Start time in Milliseconds
-     * @param finishMs Finish time in Milliseconds
-     * @return Elapsed time in Seconds */
-    function elapsedSec (startMs, finishMs) {
-        return (finishMs - startMs) / 1000;
+    // Ensure that Jasmine library is loaded first
+    if (!jasmine) {
+        throw new Exception("[Jasmine JSReporter] 'Jasmine' library not found");
     }
 
     /**
@@ -54,126 +47,83 @@
     }
 
     /**
-     * Create a new array which contains only the failed items.
-     * @param items Items which will be filtered
-     * @returns {Array} of failed items */
-    function failures (items) {
-        var fs = [], i, v;
-        for (i = 0; i < items.length; i += 1) {
-            v = items[i];
-            if (!v.passed_) {
-                fs.push(v);
-            }
-        }
-        return fs;
-    }
-
-    /**
      * Collect information about a Suite, recursively, and return a JSON result.
      * @param suite The Jasmine Suite to get data from
      */
     function getSuiteData (suite) {
         var suiteData = {
-                description : suite.description,
-                durationSec : 0,
-                specs: [],
-                suites: [],
-                passed: true
-            },
-            specs = suite.specs(),
-            suites = suite.suites(),
-            i, ilen;
+            passed: true,
+            durationSec : 0,
+            suites: [],
+            description : suite.description,
+            specs: []
+        };
 
-        // Loop over all the Suite's Specs
-        for (i = 0, ilen = specs.length; i < ilen; ++i) {
-            suiteData.specs[i] = {
-                description : specs[i].description,
-                durationSec : specs[i].durationSec,
-                passed : specs[i].results().passedCount === specs[i].results().totalCount,
-                skipped : specs[i].results().skipped,
-                passedCount : specs[i].results().passedCount,
-                failedCount : specs[i].results().failedCount,
-                totalCount : specs[i].results().totalCount,
-                failures: failures(specs[i].results().getItems())
-            };
-            suiteData.passed = !suiteData.specs[i].passed ? false : suiteData.passed;
-            suiteData.durationSec += suiteData.specs[i].durationSec;
-        }
+        for (var i = 0; i < suite.children.length; ++i) {
+            var childFailed = false;
 
-        // Loop over all the Suite's sub-Suites
-        for (i = 0, ilen = suites.length; i < ilen; ++i) {
-            suiteData.suites[i] = getSuiteData(suites[i]); //< recursive population
-            suiteData.passed = !suiteData.suites[i].passed ? false : suiteData.passed;
-            suiteData.durationSec += suiteData.suites[i].durationSec;
+            if (suite.children[i] instanceof jasmine.Spec) {
+                var specResult = suite.children[i].result;
+                childFailed = specResult.status === "failed";
+
+                suiteData.specs.push({
+                    description : specResult.description,
+                    durationSec : specResult.duration / 1000,
+                    passed : specResult.status === "passed",
+                    skipped : specResult.status === "disabled" || specResult.status === "pending",
+                    passedCount : specResult.status === "passed" ? 1 : 0,
+                    failedCount : childFailed ? 1 : 0,
+                    totalCount : specResult.status !== "disabled" ? 1 : 0
+                });
+            } else if (suite.children[i] instanceof jasmine.Suite) {
+                var childSuiteData = getSuiteData(suite.children[i]);
+                childFailed = !childSuiteData.passed;
+                suiteData.suites.push(childSuiteData);
+            }
+
+            suiteData.passed = childFailed ? false : suiteData.passed;
         }
 
         // Rounding duration numbers to 3 decimal digits
-        suiteData.durationSec = round(suiteData.durationSec, 4);
+        suiteData.durationSec = round(suite.result.duration / 1000, 4);
 
         return suiteData;
     }
 
-    var JSReporter =  function () {
+    jasmine.getJSReport = function () {
+        if (finalResults) {
+            return finalResults;
+        }
+
+        return null;
     };
 
+    jasmine.getJSReportAsString = function () {
+        return JSON.stringify(jasmine.getJSReport());
+    };
+
+    var JSReporter =  function () {};
     JSReporter.prototype = {
-        reportRunnerStarting: function (runner) {
-            // Nothing to do
-        },
-
-        reportSpecStarting: function (spec) {
-            // Start timing this spec
-            spec.startedAt = new Date();
-        },
-
-        reportSpecResults: function (spec) {
-            // Finish timing this spec and calculate duration/delta (in sec)
-            spec.finishedAt = new Date();
-            // If the spec was skipped, reportSpecStarting is never called and spec.startedAt is undefined
-            spec.durationSec = spec.startedAt ? elapsedSec(spec.startedAt.getTime(), spec.finishedAt.getTime()) : 0;
-        },
-
-        reportSuiteResults: function (suite) {
-            // Nothing to do
-        },
-
-        reportRunnerResults: function (runner) {
-            var suites = runner.suites(),
-                i, j, ilen;
-
+        jasmineDone: function () {
             // Attach results to the "jasmine" object to make those results easy to scrap/find
-            jasmine.runnerResults = {
-                suites: [],
-                durationSec : 0,
-                passed : true
-            };
+            var results = getSuiteData(jasmine.getEnv().topSuite());
+            var totalDuration = 0;
 
-            // Loop over all the Suites
-            for (i = 0, ilen = suites.length, j = 0; i < ilen; ++i) {
-                if (suites[i].parentSuite === null) {
-                    jasmine.runnerResults.suites[j] = getSuiteData(suites[i]);
-                    // If 1 suite fails, the whole runner fails
-                    jasmine.runnerResults.passed = !jasmine.runnerResults.suites[j].passed ? false : jasmine.runnerResults.passed;
-                    // Add up all the durations
-                    jasmine.runnerResults.durationSec += jasmine.runnerResults.suites[j].durationSec;
-                    j++;
-                }
+            var specs = results.specs;
+            for (var i = 0; i < specs.length; ++i) {
+                totalDuration += specs[i].durationSec;
             }
 
-            // Decorate the 'jasmine' object with getters
-            jasmine.getJSReport = function () {
-                if (jasmine.runnerResults) {
-                    return jasmine.runnerResults;
-                }
-                return null;
-            };
-            jasmine.getJSReportAsString = function () {
-                return JSON.stringify(jasmine.getJSReport());
-            };
+            var suites = results.suites;
+            for (var i = 0; i < suites.length; ++i) {
+                totalDuration += suites[i].durationSec;
+            }
+
+            results.durationSec = round(totalDuration, 4);
+            finalResults = results;
         }
     };
 
     // export public
     jasmine.JSReporter = JSReporter;
 })();
-
