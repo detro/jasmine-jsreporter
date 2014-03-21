@@ -53,7 +53,7 @@
     function getSuiteData (suite) {
         var suiteData = {
             passed: true,
-            durationSec : 0,
+            durationSec : null,
             suites: [],
             description : suite.description,
             specs: []
@@ -68,7 +68,7 @@
 
                 suiteData.specs.push({
                     description : specResult.description,
-                    durationSec : specResult.duration / 1000,
+                    durationSec : specResult.duration != null ? specResult.duration / 1000 : null,
                     passed : specResult.status === "passed",
                     skipped : specResult.status === "disabled" || specResult.status === "pending",
                     passedCount : specResult.status === "passed" ? 1 : 0,
@@ -85,7 +85,9 @@
         }
 
         // Rounding duration numbers to 3 decimal digits
-        suiteData.durationSec = round(suite.result.duration / 1000, 4);
+        if (suite.result.duration != null) {
+            suiteData.durationSec = round(suite.result.duration / 1000, 4);
+        }
 
         return suiteData;
     }
@@ -111,12 +113,16 @@
 
             var specs = results.specs;
             for (var i = 0; i < specs.length; ++i) {
-                totalDuration += specs[i].durationSec;
+                if (specs[i].durationSec != null) {
+                    totalDuration += specs[i].durationSec;
+                }
             }
 
             var suites = results.suites;
             for (var i = 0; i < suites.length; ++i) {
-                totalDuration += suites[i].durationSec;
+                if (suites[i].durationSec != null) {
+                    totalDuration += suites[i].durationSec;
+                }
             }
 
             results.durationSec = round(totalDuration, 4);
