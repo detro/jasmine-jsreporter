@@ -26,110 +26,209 @@
   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+(function (jasmine) {
 
-(function () {
-    var finalResults;
+  if (!jasmine) {
+    throw new Error("[Jasmine JSReporter] 'Jasmine' library not found");
+  }
 
-    // Ensure that Jasmine library is loaded first
-    if (!jasmine) {
-        throw new Exception("[Jasmine JSReporter] 'Jasmine' library not found");
+  /*
+    Simple timer implementation
+  */
+  var Timer = function () {};
+
+  Timer.prototype.start = function () {
+    this.startTime = new Date().getTime();
+    return this;
+  };
+
+  Timer.prototype.elapsed = function () {
+    if (this.startTime == null) {
+      return -1;
+    }
+    return new Date().getTime() - this.startTime;
+  };
+
+  /*
+    JSReporter compatible with Jasmine 2.0.0's event-driven style.
+  */
+
+  jasmine.JSReporter = function () {
+    _.bindAll(this, 'getJSReport', 'getJSReportAsString');
+
+    this.specs  = {};
+    this.suites = {};
+    this.rootSuites = [];
+    this.suiteStack = [];
+    this.done = false;
+
+    // export methods under jasmine namespace
+    jasmine.getJSReport = this.getJSReport;
+    jasmine.getJSReportAsString = this.getJSReportAsString;
+  };
+
+  var JSR = jasmine.JSReporter.prototype;
+
+  // Reporter API methods
+  // --------------------
+
+  JSR.suiteStarted = function (suite) {
+    suite = this._cacheSuite(suite);
+    // build up suite tree as we go
+    suite.specs = [];
+    suite.suites = [];
+    suite.passed = true;
+    suite.parentId = _.last(this.suiteStack);
+    if (suite.parentId) {
+      this.suites[suite.parentId].suites.push(suite);
+    } else {
+      this.rootSuites.push(suite.id);
+    }
+    this.suiteStack.push(suite.id);
+    suite.timer = new Timer().start();
+  };
+
+  JSR.suiteDone = function (suite) {
+    suite = this._cacheSuite(suite);
+    suite.duration = suite.timer.elapsed();
+    suite.durationSec = suite.duration / 1000;
+    this.suiteStack.pop();
+
+    // maintain parent suite state
+    var parent = this.suites[suite.parentId];
+    if (parent) {
+      parent.passed = parent.passed && suite.passed;
     }
 
-    /**
-     * Round an amount to the given number of Digits.
-     * If no number of digits is given, than '2' is assumed.
-     * @param amount Amount to round
-     * @param numOfDecDigits Number of Digits to round to. Default value is '2'.
-     * @return Rounded amount */
-    function round (amount, numOfDecDigits) {
-        numOfDecDigits = numOfDecDigits || 2;
-        return Math.round(amount * Math.pow(10, numOfDecDigits)) / Math.pow(10, numOfDecDigits);
+    // keep report representation clean
+    delete suite.timer;
+    delete suite.id;
+    delete suite.parentId;
+    delete suite.fullName;
+  };
+
+  JSR.specStarted = function (spec) {
+    spec = this._cacheSpec(spec);
+    spec.timer = new Timer().start();
+    // build up suites->spec tree as we go
+    spec.suiteId = _.last(this.suiteStack);
+    this.suites[spec.suiteId].specs.push(spec);
+  };
+
+  JSR.specDone = function (spec) {
+    spec = this._cacheSpec(spec);
+
+    spec.duration = spec.timer.elapsed();
+    spec.durationSec = spec.duration / 1000;
+
+    spec.skipped = spec.status === 'pending';
+    spec.passed = spec.skipped || spec.status === 'passed';
+
+    // totalCount and passedCount will be populated if/when jasmine#575 gets accepted
+    spec.totalCount = spec.totalExpectations || 0;
+    spec.passedCount = spec.passedExpectations ? spec.passedExpectations.length : 0;
+
+    spec.failedCount = spec.failedExpectations.length;
+
+    spec.failures = _.map(spec.failedExpectations, function (fail) {
+      return {
+        type: 'expect',
+        expected: fail.expected,
+        passed: false,
+        message: fail.message,
+        matcherName: fail.matcherName,
+        trace: {
+          stack: fail.stack
+        }
+      };
+    });
+
+    // maintain parent suite state
+    var parent = this.suites[spec.suiteId];
+    if (spec.failed) {
+      parent.failingSpecs.push(spec);
     }
+    parent.passed = parent.passed && spec.passed;
 
-    /**
-     * Collect information about a Suite, recursively, and return a JSON result.
-     * @param suite The Jasmine Suite to get data from
-     */
-    function getSuiteData (suite) {
-        var suiteData = {
-            passed: true,
-            durationSec : null,
-            suites: [],
-            description : suite.description,
-            specs: []
-        };
+    // keep report representation clean
+    delete spec.timer;
+    delete spec.totalExpectations;
+    delete spec.passedExpectations;
+    delete spec.suiteId;
+    delete spec.fullName;
+    delete spec.id;
+    delete spec.status;
+    delete spec.failedExpectations;
+  };
 
-        for (var i = 0; i < suite.children.length; ++i) {
-            var childFailed = false;
-
-            if (suite.children[i] instanceof jasmine.Spec) {
-                var specResult = suite.children[i].result;
-                childFailed = specResult.status === "failed";
-
-                suiteData.specs.push({
-                    description : specResult.description,
-                    durationSec : specResult.duration != null ? specResult.duration / 1000 : null,
-                    passed : specResult.status === "passed",
-                    skipped : specResult.status === "disabled" || specResult.status === "pending",
-                    passedCount : specResult.status === "passed" ? 1 : 0,
-                    failedCount : childFailed ? 1 : 0,
-                    totalCount : specResult.status !== "disabled" ? 1 : 0
-                });
-            } else if (suite.children[i] instanceof jasmine.Suite) {
-                var childSuiteData = getSuiteData(suite.children[i]);
-                childFailed = !childSuiteData.passed;
-                suiteData.suites.push(childSuiteData);
-            }
-
-            suiteData.passed = childFailed ? false : suiteData.passed;
-        }
-
-        // Rounding duration numbers to 3 decimal digits
-        if (suite.result.duration != null) {
-            suiteData.durationSec = round(suite.result.duration / 1000, 4);
-        }
-
-        return suiteData;
+  JSR.jasmineDone = function () {
+    if (this.done) {
+      return;
     }
+    this._buildReport();
+    this.done = true;
+  };
 
-    jasmine.getJSReport = function () {
-        if (finalResults) {
-            return finalResults;
-        }
+  JSR.getJSReport = function () {
+    if (this.done) {
+      return this.report;
+    }
+  };
 
-        return null;
+  JSR.getJSReportAsString = function () {
+    if (this.done) {
+      return JSON.stringify(this.report);
+    }
+  };
+
+  // Private methods
+  // ---------------
+
+  JSR._haveSpec = function (spec) {
+    return this.specs[spec.id] != null;
+  };
+
+  JSR._cacheSpec = function (spec) {
+    var existing = this.specs[spec.id];
+    if (existing == null) {
+      existing = this.specs[spec.id] = _.clone(spec);
+    } else {
+      _.extend(existing, spec);
+    }
+    return existing;
+  };
+
+  JSR._haveSuite = function (suite) {
+    return this.suites[suite.id] != null;
+  };
+
+  JSR._cacheSuite = function (suite) {
+    var existing = this.suites[suite.id];
+    if (existing == null) {
+      existing = this.suites[suite.id] = _.clone(suite);
+    } else {
+      _.extend(existing, suite);
+    }
+    return existing;
+  };
+
+  JSR._buildReport = function () {
+    var overallDuration = 0;
+    var overallPassed = true;
+    var overallSuites = [];
+
+    _.each(this.rootSuites, function (suiteId) {
+      var suite = this.suites[suiteId];
+      overallDuration += suite.duration;
+      overallPassed = overallPassed && suite.passed;
+      overallSuites.push(suite);
+    }, this);
+
+    this.report = {
+      passed: overallPassed,
+      durationSec: overallDuration / 1000,
+      suites: overallSuites
     };
+  };
 
-    jasmine.getJSReportAsString = function () {
-        return JSON.stringify(jasmine.getJSReport());
-    };
-
-    var JSReporter =  function () {};
-    JSReporter.prototype = {
-        jasmineDone: function () {
-            // Attach results to the "jasmine" object to make those results easy to scrap/find
-            var results = getSuiteData(jasmine.getEnv().topSuite());
-            var totalDuration = 0;
-
-            var specs = results.specs;
-            for (var i = 0; i < specs.length; ++i) {
-                if (specs[i].durationSec != null) {
-                    totalDuration += specs[i].durationSec;
-                }
-            }
-
-            var suites = results.suites;
-            for (var i = 0; i < suites.length; ++i) {
-                if (suites[i].durationSec != null) {
-                    totalDuration += suites[i].durationSec;
-                }
-            }
-
-            results.durationSec = round(totalDuration, 4);
-            finalResults = results;
-        }
-    };
-
-    // export public
-    jasmine.JSReporter = JSReporter;
-})();
+})(jasmine);
