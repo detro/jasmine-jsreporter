@@ -53,7 +53,7 @@
     JSReporter compatible with Jasmine 2.0.0's event-driven style.
   */
 
-  jasmine.JSReporter = function () {
+  jasmine.JSReporter2 = function () {
     _.bindAll(this, 'getJSReport', 'getJSReportAsString');
 
     this.specs  = {};
@@ -67,7 +67,7 @@
     jasmine.getJSReportAsString = this.getJSReportAsString;
   };
 
-  var JSR = jasmine.JSReporter.prototype;
+  var JSR = jasmine.JSReporter2.prototype;
 
   // Reporter API methods
   // --------------------
