@@ -1,11 +1,5 @@
 # Jasmine JS-Reporter
 
-- - -
-This is `jasmine-2.0` branch and changes to this library to support
-[this new version of Jasmine](http://jasmine.github.io/2.0/introduction.html)
-should go in there.
-- - -
-
 This is a Jasmine Reporter, designed to simplify the extraction of test results from the Page.
 It's tailored with _Test Reporting Automation_ in mind.
 
@@ -55,15 +49,17 @@ and looks like the following:
 
 After that, you can just extract it from the page.
 
-## How do I download it and check it works
+## Usage
 
-1. Download the code:
-    * `git clone http://github.com/detro/jasmine-jsreporter.git`
-2. Include the reporter in your page running Jasmine tests with something like:
+1. Clone this repository, and include the reporter in your page running Jasmine tests:
     * `<script src="path/to/jasmine-jsreporter.js" type="text/javascript"></script>`
-3. Open your [WebInspector](http://trac.webkit.org/wiki/WebInspector), [Firebug](http://getfirebug.com/) or whatever you use
-4. On the console, type:
-    * `jasmine.getJSReport ()`
+2. Tell jasmine to use the reporter
+    * For Jasmine 1.x: `jasmine.getEnv().addReporter(new jasmine.JSReporter())`
+    * For Jasmine 2.0: `jasmine.getEnv().addReporter(new jasmine.JSReporter2())`
+3. Run your tests as normal
+4. Go to your browser console, via [WebInspector](http://trac.webkit.org/wiki/WebInspector), [Firebug](http://getfirebug.com/), etc.
+     On the console, type:
+     * `jasmine.getJSRepor t()`
 5. Check that you get an Object back (should look like the above one)
 6. You are done!
 
