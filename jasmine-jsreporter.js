@@ -1,7 +1,8 @@
 /*
   This file is part of the Jasmine JSReporter project from Ivan De Marino.
 
-  Copyright (C) 2011 Ivan De Marino (aka detro, aka detronizator), http://blog.ivandemarino.me, ivan.de.marino@gmail.com
+  Copyright (C) 2011-2014 Ivan De Marino <http://ivandemarino.me>
+  Copyright (C) 2014 Alex Treppass <http://alextreppass.co.uk>
 
   Redistribution and use in source and binary forms, with or without
   modification, are permitted provided that the following conditions are met:
