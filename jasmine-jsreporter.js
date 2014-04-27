@@ -201,14 +201,26 @@
     return new Date().getTime() - this.startTime;
   };
 
-  jasmine.JSReporter2 = function () {
-    _.bindAll(this, 'getJSReport', 'getJSReportAsString');
+  /*
+    Utility methods
+  */
+  var _extend = function (obj1, obj2) {
+    for (var prop in obj2) {
+      obj1[prop] = obj2[prop];
+    }
+  };
+  var _clone = function (obj) {
+    if (obj !== Object(obj)) {
+      return obj;
+    }
+    return _extend({}, obj);
+  };
 
+  jasmine.JSReporter2 = function () {
     this.specs  = {};
     this.suites = {};
     this.rootSuites = [];
     this.suiteStack = [];
-    this.done = false;
 
     // export methods under jasmine namespace
     jasmine.getJSReport = this.getJSReport;
@@ -226,7 +238,7 @@
     suite.specs = [];
     suite.suites = [];
     suite.passed = true;
-    suite.parentId = _.last(this.suiteStack);
+    suite.parentId = this.suiteStack.slice(this.suiteStack.length -1);
     if (suite.parentId) {
       this.suites[suite.parentId].suites.push(suite);
     } else {
@@ -259,7 +271,7 @@
     spec = this._cacheSpec(spec);
     spec.timer = new Timer().start();
     // build up suites->spec tree as we go
-    spec.suiteId = _.last(this.suiteStack);
+    spec.suiteId = this.suiteStack.slice(this.suiteStack.length -1);
     this.suites[spec.suiteId].specs.push(spec);
   };
 
@@ -277,9 +289,11 @@
     spec.passedCount = spec.passedExpectations ? spec.passedExpectations.length : 0;
 
     spec.failedCount = spec.failedExpectations.length;
+    spec.failures = [];
 
-    spec.failures = _.map(spec.failedExpectations, function (fail) {
-      return {
+    for (var i = 0, j = spec.failedExpectations.length; i < j; i++) {
+      var fail = spec.failedExpectations[i];
+      spec.failures.push({
         type: 'expect',
         expected: fail.expected,
         passed: false,
@@ -288,8 +302,8 @@
         trace: {
           stack: fail.stack
         }
-      };
-    });
+      });
+    }
 
     // maintain parent suite state
     var parent = this.suites[spec.suiteId];
@@ -310,22 +324,18 @@
   };
 
   JSR.jasmineDone = function () {
-    if (this.done) {
-      return;
-    }
     this._buildReport();
-    this.done = true;
   };
 
   JSR.getJSReport = function () {
-    if (this.done) {
-      return this.report;
+    if (jasmine.jsReport) {
+      return jasmine.jsReport;
     }
   };
 
   JSR.getJSReportAsString = function () {
-    if (this.done) {
-      return JSON.stringify(this.report);
+    if (jasmine.jsReport) {
+      return JSON.stringify(jasmine.jsReport);
     }
   };
 
@@ -339,9 +349,9 @@
   JSR._cacheSpec = function (spec) {
     var existing = this.specs[spec.id];
     if (existing == null) {
-      existing = this.specs[spec.id] = _.clone(spec);
+      existing = this.specs[spec.id] = _clone(spec);
     } else {
-      _.extend(existing, spec);
+      _extend(existing, spec);
     }
     return existing;
   };
@@ -353,9 +363,9 @@
   JSR._cacheSuite = function (suite) {
     var existing = this.suites[suite.id];
     if (existing == null) {
-      existing = this.suites[suite.id] = _.clone(suite);
+      existing = this.suites[suite.id] = _clone(suite);
     } else {
-      _.extend(existing, suite);
+      _extend(existing, suite);
     }
     return existing;
   };
@@ -365,14 +375,14 @@
     var overallPassed = true;
     var overallSuites = [];
 
-    _.each(this.rootSuites, function (suiteId) {
-      var suite = this.suites[suiteId];
+    for (var i = 0, j = this.rootSuites.length; i < j; i++) {
+      var suite = this.suites[i];
       overallDuration += suite.duration;
       overallPassed = overallPassed && suite.passed;
       overallSuites.push(suite);
-    }, this);
+    }
 
-    this.report = {
+    jasmine.jsReport = {
       passed: overallPassed,
       durationSec: overallDuration / 1000,
       suites: overallSuites
