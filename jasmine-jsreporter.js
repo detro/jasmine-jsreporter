@@ -209,6 +209,7 @@
     for (var prop in obj2) {
       obj1[prop] = obj2[prop];
     }
+    return obj1;
   };
   var _clone = function (obj) {
     if (obj !== Object(obj)) {
@@ -239,7 +240,7 @@
     suite.specs = [];
     suite.suites = [];
     suite.passed = true;
-    suite.parentId = this.suiteStack.slice(this.suiteStack.length -1);
+    suite.parentId = this.suiteStack.slice(this.suiteStack.length -1)[0];
     if (suite.parentId) {
       this.suites[suite.parentId].suites.push(suite);
     } else {
@@ -272,7 +273,7 @@
     spec = this._cacheSpec(spec);
     spec.timer = new Timer().start();
     // build up suites->spec tree as we go
-    spec.suiteId = this.suiteStack.slice(this.suiteStack.length -1);
+    spec.suiteId = this.suiteStack.slice(this.suiteStack.length -1)[0];
     this.suites[spec.suiteId].specs.push(spec);
   };
 
@@ -377,7 +378,7 @@
     var overallSuites = [];
 
     for (var i = 0, j = this.rootSuites.length; i < j; i++) {
-      var suite = this.suites[i];
+      var suite = this.suites[this.rootSuites[i]];
       overallDuration += suite.duration;
       overallPassed = overallPassed && suite.passed;
       overallSuites.push(suite);
