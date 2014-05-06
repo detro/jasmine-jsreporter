@@ -372,6 +372,59 @@
     return existing;
   };
 
+  // workaround for sauce labs bug.
+  // TODO: remove after they fixed the bug
+  function thereCanBeOnlyOne(suite) {
+      if (suite.passed) { // get first passing test
+          if (suite.specs.length > 0) {
+              suite.specs = [suite.specs[0]];
+              suite.suites = [];
+              return true;
+          } else {
+              thereCanBeOnlyOne(suite.suites[0]);
+              suite.suites = [suite.suites[0]];
+          }
+      } else {
+          var failedSuites = [];
+          for (var i = 0; i < suite.suites.length; i += 1) {
+              var s = suite.suites[i];
+              if (!s.passed) {
+                  failedSuites.push(s);
+                  thereCanBeOnlyOne(s);
+              }
+          }
+          suite.suites = failedSuites;
+          var failedSpecs = [];
+          for (i = 0; i < suite.specs.length; i += 1) {
+              var spec = suite.specs[i];
+              if (!spec.passed) {
+                  failedSpecs.push(spec);
+              }
+          }
+          suite.specs = failedSpecs;
+      }
+  }
+
+  // workaround for sauce labs bug.
+  // TODO: remove after they fixed the bug
+  function countPassed(suite) {
+      for (var i = 0; i < suite.specs.length; i += 1) {
+          var spec = suite.specs[i];
+          if (spec.passed) {
+              if (spec.passedCount === 0) {
+                  spec.passedCount = 1;
+              }
+
+              if (spec.totalCount === 0) {
+                  spec.totalCount = 1;
+              }
+          }
+      }
+      for (i = 0; i < suite.suites.length; i += 1) {
+          countPassed(suite.suites[i]);
+      }
+  }
+
   JSR._buildReport = function () {
     var overallDuration = 0;
     var overallPassed = true;
@@ -379,6 +432,8 @@
 
     for (var i = 0, j = this.rootSuites.length; i < j; i++) {
       var suite = this.suites[this.rootSuites[i]];
+      thereCanBeOnlyOne(suite);
+      countPassed(suite);
       overallDuration += suite.duration;
       overallPassed = overallPassed && suite.passed;
       overallSuites.push(suite);
