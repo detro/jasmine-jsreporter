@@ -27,10 +27,14 @@
   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
   THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-(function (jasmine) {
+(function (jasmine, jasmineRequire) {
 
-  if (!jasmine) {
-    throw new Error("[Jasmine JSReporter] 'Jasmine' library not found");
+  // jasmine 2.0 bootstrap:
+  // if jasmine not present, but jasmineRequire is, then load it
+  if (!jasmine && jasmineRequire) {
+    window.jasmine = jasmine = jasmineRequire.core(jasmineRequire);
+  } else {
+    throw new Error("[jasmine-jsreporter] 'Jasmine' library has not been loaded");
   }
 
   // ------------------------------------------------------------------------
@@ -391,4 +395,4 @@
     };
   };
 
-})(jasmine);
+})(window.jasmine, window.jasmineRequire);
