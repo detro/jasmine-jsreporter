@@ -286,10 +286,8 @@
     spec.skipped = spec.status === 'pending';
     spec.passed = spec.skipped || spec.status === 'passed';
 
-    // totalCount and passedCount will be populated if/when jasmine#575 gets accepted
-    spec.totalCount = spec.totalExpectations || 0;
-    spec.passedCount = spec.passedExpectations ? spec.passedExpectations.length : 0;
-
+    spec.totalCount = spec.passedExpectations.length + spec.failedExpectations.length;
+    spec.passedCount = spec.passedExpectations.length;
     spec.failedCount = spec.failedExpectations.length;
     spec.failures = [];
 
