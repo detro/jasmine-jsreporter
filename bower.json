@@ -1,0 +1,30 @@
+{
+  "name": "jasmine-jsreporter",
+  "main": "jasmine-jsreporter.js",
+  "version": "1.0.0",
+  "homepage": "https://github.com/detro/jasmine-jsreporter",
+  "authors": [
+    "detro <ivan.de.marino@gmail.com>"
+  ],
+  "description": "The purpose of this reporter is to make it easier to extract informations about the executed Test Results, without having to parse the DOM.",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "jasmine",
+    "reporter",
+    "saucelabs",
+    "grunt",
+    "automation",
+    "testing"
+  ],
+  "license": "BSD",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "examples"
+  ]
+}
